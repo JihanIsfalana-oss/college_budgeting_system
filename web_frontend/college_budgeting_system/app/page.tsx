@@ -1,83 +1,55 @@
 "use client";
 import { useState, useEffect } from "react";
-
-interface RiwayatItem {
-  id: number;
-  saldo: number;
-  pengeluaran_harian: number;
-  sisa_hari: string;
-  pesan: string;
-  zona: string;
-}
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const [deskripsi, setDeskripsi] = useState("");
   const [saldo, setSaldo] = useState("");
   const [pengeluaran, setPengeluaran] = useState("");
   const [hasil, setHasil] = useState<any>(null);
-
-  const [riwayat, setRiwayat] = useState<RiwayatItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  // 1. Ambil Data Riwayat pas Halaman Dibuka (Auto-Load)
-  const fetchRiwayat = async () => {
-    try {
-      const res = await fetch("http://127.0.0.1:8000/riwayat");
-      const data = await res.json();
-      setRiwayat(data);
-    } catch (err) {
-      console.error("Server Error!", err);
-    }
-  };
+  
+  const [userNama, setUserNama] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
-    fetchRiwayat();
+    const email = localStorage.getItem("user_email");
+    const nama = localStorage.getItem("user_nama");
+    
+    if (!email) {
+      router.push("/login"); 
+    } else {
+      setUserNama(nama || "Anak Kos");
+    }
   }, []);
 
-  // 2. Fungsi Hitung (Ke C++)
-  const hitungSurvival = async () => {
+  const handleLogout = () => {
+    localStorage.removeItem("user_email");
+    localStorage.removeItem("user_nama");
+    router.push("/login");
+  };
+
+  const hitungDanSimpan = async () => {
+    const email = localStorage.getItem("user_email");
+    
+    if (!deskripsi || !saldo || !pengeluaran) {
+      alert("Isi semua data dulu bos!");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(
-        `http://127.0.0.1:8000/cek-survival?saldo=${saldo}&pengeluaran=${pengeluaran}`
+        `http://127.0.0.1:8000/cek-survival-otomatis?user_email=${email}&saldo=${saldo}&pengeluaran=${pengeluaran}&deskripsi=${deskripsi}`,
+        { method: "POST" }
       );
       const data = await res.json();
       setHasil(data);
     } catch (error) {
-      alert("Server Sedang Maintenance!.");
+      alert("Server Backend Mati/Error!");
     }
     setLoading(false);
   };
-
-  // 3. Fungsi Simpan (Ke SQLite)
-  const simpanKeDatabase = async () => {
-    if (!hasil) return;
-    setSaving(true);
-    try {
-      // Kirim data ke endpoint POST
-      await fetch(
-        `http://127.0.0.1:8000/simpan-riwayat?saldo=${hasil.saldo}&pengeluaran=${hasil.pengeluaran_harian}&sisa_hari=${hasil.sisa_hari_bertahan}&pesan=${hasil.pesan}&zona=${hasil.zona}`,
-        { method: "POST" }
-      );
-      // Refresh list riwayat setelah simpan
-      await fetchRiwayat(); 
-      alert("Data berhasil diamankan ke Database!");
-    } catch (error) {
-      alert("Gagal Menyimpan data.");
-    }
-    setSaving(false);
-  };
-
-  // 4. Fungsi Hapus
-  const hapusRiwayat = async (id: number) => {
-    if(!confirm("Yakin mau hapus?")) return;
-    try {
-      await fetch(`http://127.0.0.1:8000/hapus-riwayat/${id}`, { method: "DELETE" });
-      fetchRiwayat();
-    } catch (err) {
-      alert("Gagal hapus.");
-    }
-  }
 
   const getWarnaZona = (zona: string) => {
     if (zona === "black") return "bg-black border-red-600 text-red-500 animate-pulse";
@@ -88,99 +60,89 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center p-12 bg-gray-950 text-white font-mono">
       <div className="z-10 max-w-xl w-full">
+        
+        {/* === TOP BAR === */}
+        <div className="flex justify-between items-center mb-8">
+          <div className="text-sm text-gray-400">
+            👋 Halo, <span className="font-bold text-white">{userNama}</span>
+          </div>
+          <button onClick={handleLogout} className="text-xs text-red-400 hover:text-red-300 border border-red-900/50 px-3 py-1 rounded">
+            Keluar
+          </button>
+        </div>
+
+        {/* === NAVBAR SIMPLE === */}
+        <div className="flex justify-center space-x-4 mb-10">
+          <Link href="/" className="px-6 py-2 bg-blue-600 rounded-full font-bold shadow-lg shadow-blue-500/30">
+            🏠 Home
+          </Link>
+          <Link href="/riwayat" className="px-6 py-2 bg-gray-800 hover:bg-gray-700 rounded-full font-bold text-gray-400 transition-colors">
+            📂 Riwayat & Statistik
+          </Link>
+        </div>
+
         <h1 className="text-4xl font-extrabold text-center mb-8 bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
-          💸 Survival Calculator
+          💸 College'$ Budgeting System
         </h1>
         
         {/* === BAGIAN INPUT === */}
         <div className="bg-gray-900 p-8 rounded-2xl shadow-2xl border border-gray-800 mb-8">
           <div className="space-y-6">
             <div>
-              <label className="block mb-2 text-gray-400">Saldo (Rp)</label>
+              <label className="block mb-2 text-gray-400">Deskripsi</label>
               <input
-                type="number"
-                className="w-full p-4 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-blue-500 text-lg transition-all"
-                placeholder="Saldomu..."
-                value={saldo}
-                onChange={(e) => setSaldo(e.target.value)}
+                type="text"
+                className="w-full p-4 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-purple-500 text-lg"
+                placeholder="Misal: Print Kartu..."
+                value={deskripsi}
+                onChange={(e) => setDeskripsi(e.target.value)}
               />
             </div>
             
-            <div>
-              <label className="block mb-2 text-gray-400">Pengeluaran (Rp)</label>
-              <input
-                type="number"
-                className="w-full p-4 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-blue-500 text-lg transition-all"
-                placeholder="Pengeluaran..."
-                value={pengeluaran}
-                onChange={(e) => setPengeluaran(e.target.value)}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-2 text-gray-400">Uang Anda (Rp)</label>
+                <input
+                  type="number"
+                  className="w-full p-4 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-blue-500 text-lg"
+                  value={saldo}
+                  onChange={(e) => setSaldo(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block mb-2 text-gray-400">Pengeluaran (Rp)</label>
+                <input
+                  type="number"
+                  className="w-full p-4 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-blue-500 text-lg"
+                  value={pengeluaran}
+                  onChange={(e) => setPengeluaran(e.target.value)}
+                />
+              </div>
             </div>
 
             <button
-              onClick={hitungSurvival}
+              onClick={hitungDanSimpan}
               disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-4 rounded-lg transition-all transform active:scale-95"
             >
-              {loading ? "Menghitung..." : "🔮 Cek Cashflow Saya"}
+              {loading ? "Sedang memproses..." : "Cek Cashflow Anda"}
             </button>
           </div>
 
-          {/* === BAGIAN HASIL & SAVE === */}
+          {/* === BAGIAN HASIL (AUTO-SAVE) === */}
           {hasil && (
-            <div className={`mt-8 p-6 rounded-xl border-2 ${getWarnaZona(hasil.zona)} shadow-lg transition-all duration-500`}>
-              <h2 className="text-sm uppercase tracking-widest opacity-70 mb-1">Hasil Analisa:</h2>
+            <div className={`mt-8 p-6 rounded-xl border-2 ${getWarnaZona(hasil.zona)} shadow-lg transition-all`}>
+              <div className="mb-4 inline-block bg-purple-900/60 border border-purple-400 text-purple-200 px-3 py-1 rounded-full text-xs font-bold uppercase">
+                Kategori: {hasil.kategori_ai}
+              </div>
               
               <div className="text-3xl font-bold">
-                {hasil.sisa_hari_bertahan} <span className="text-lg font-normal">Hari</span>
+                {hasil.sisa_hari} <span className="text-lg font-normal"> Hari</span>
               </div>
-              
-              <div className="mt-4 pt-4 border-t border-white/10 italic text-lg font-semibold">
-                "{hasil.pesan}"
-              </div>
-
-              {/* Tombol Simpan Baru */}
-              <button 
-                onClick={simpanKeDatabase}
-                disabled={saving}
-                className="mt-6 w-full py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded text-sm transition-colors font-bold"
-              >
-                {saving ? "Menyimpan..." : "💾 Simpan ke Database"}
-              </button>
+              <div className="mt-2 text-sm italic">{hasil.pesan}</div>
             </div>
           )}
         </div>
-
-        {/* === BAGIAN RIWAYAT (DATABASE LIST) === */}
-        <div className="w-full">
-          <h2 className="text-xl font-bold mb-4 border-b border-gray-800 pb-2">📂 Riwayat Keuangan Anda</h2>
-          
-          {riwayat.length === 0 ? (
-            <p className="text-gray-500 text-center py-4 text-sm">Belum ada data tersimpan.</p>
-          ) : (
-            <div className="space-y-3">
-              {riwayat.map((item) => (
-                <div key={item.id} className="flex justify-between items-center bg-gray-900 p-4 rounded-lg border border-gray-800 hover:border-gray-600 transition-colors">
-                  <div>
-                    <div className="text-xs text-gray-400 mb-1">
-                      Saldo: Rp{item.saldo.toLocaleString()} | Keluar: Rp{item.pengeluaran_harian?.toLocaleString()}
-                    </div>
-                    <div className={`font-bold text-sm ${item.zona === 'black' ? 'text-red-500' : item.zona === 'red' ? 'text-orange-400' : 'text-green-400'}`}>
-                      {item.sisa_hari} Hari - {item.zona.toUpperCase()}
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => hapusRiwayat(item.id)}
-                    className="text-red-500 hover:text-red-400 text-xs border border-red-900 bg-red-900/20 px-3 py-1 rounded transition-colors"
-                  >
-                    Hapus
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
       </div>
     </main>
   );
