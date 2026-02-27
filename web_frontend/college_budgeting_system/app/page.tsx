@@ -10,6 +10,9 @@ export default function Home() {
   const [hasil, setHasil] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   
+  // State untuk Custom Alert (Toast)
+  const [toast, setToast] = useState<{ msg: string; type: "error" | "success" } | null>(null);
+  
   const [userNama, setUserNama] = useState("");
   const router = useRouter();
 
@@ -30,11 +33,19 @@ export default function Home() {
     router.push("/login");
   };
 
+  // Fungsi buat nampilin notifikasi melayang selama 3 detik
+  const showToast = (msg: string, type: "error" | "success") => {
+    setToast({ msg, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3000);
+  };
+
   const hitungDanSimpan = async () => {
     const email = localStorage.getItem("user_email");
     
     if (!deskripsi || !saldo || !pengeluaran) {
-      alert("Isi semua data dulu bos!");
+      showToast("Isi semua data dulu!", "error");
       return;
     }
     setLoading(true);
@@ -45,75 +56,104 @@ export default function Home() {
       );
       const data = await res.json();
       setHasil(data);
+      showToast("Data berhasil dianalisa!", "success");
     } catch (error) {
-      alert("Server Backend Mati/Error!");
+      showToast("Server Error!", "error");
     }
     setLoading(false);
   };
 
   const getWarnaZona = (zona: string) => {
-    if (zona === "black") return "bg-black border-red-600 text-red-500 animate-pulse";
-    if (zona === "red") return "bg-red-900/50 border-red-500 text-white";
-    return "bg-green-900/50 border-green-500 text-white";
+    if (zona === "black") return "bg-red-950/40 border-red-500/50 text-red-400 shadow-[0_0_20px_rgba(239,68,68,0.2)] animate-pulse";
+    if (zona === "red") return "bg-orange-950/40 border-orange-500/50 text-orange-300 shadow-[0_0_15px_rgba(249,115,22,0.1)]";
+    return "bg-green-950/40 border-green-500/50 text-green-300 shadow-[0_0_15px_rgba(34,197,94,0.1)]";
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-12 bg-gray-950 text-white font-mono">
-      <div className="z-10 max-w-xl w-full">
-        
-        {/* === TOP BAR === */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="text-sm text-gray-400">
-            👋 Halo, <span className="font-bold text-white">{userNama}</span>
-          </div>
-          <button onClick={handleLogout} className="text-xs text-red-400 hover:text-red-300 border border-red-900/50 px-3 py-1 rounded">
-            Keluar
-          </button>
+    <main className="flex min-h-screen flex-col items-center py-10 px-4 bg-slate-950 text-slate-200 font-sans selection:bg-purple-500/30 relative">
+      
+      {/* === CUSTOM TOAST NOTIFICATION === */}
+      {toast && (
+        <div className={`fixed top-8 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-2xl border flex items-center gap-3 animate-bounce shadow-black/50 ${
+          toast.type === "error" 
+            ? "bg-red-950/90 border-red-500/50 text-red-200" 
+            : "bg-green-950/90 border-green-500/50 text-green-200"
+        }`}>
+          <span className="text-xl">{toast.type === "error" ? "⚠️" : "✅"}</span>
+          <span className="font-bold text-sm tracking-wide">{toast.msg}</span>
         </div>
+      )}
 
+      {/* === TOP BAR === */}
+      <div className="z-20 w-full max-w-2xl flex justify-between items-center mb-10 bg-slate-900/80 border border-slate-800 px-6 py-4 rounded-full shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-sm font-bold text-white shadow-inner">
+            {userNama.charAt(0).toUpperCase()}
+          </div>
+          <div className="text-sm text-slate-300">
+            Halo, <span className="font-bold text-white">{userNama}</span>
+          </div>
+        </div>
+        <button 
+          onClick={handleLogout} 
+          className="text-xs font-semibold text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500 border border-red-500/30 px-4 py-2 rounded-full transition-all duration-300"
+        >
+          Keluar
+        </button>
+      </div>
+
+      <div className="z-10 max-w-xl w-full flex flex-col items-center">
+        
         {/* === NAVBAR SIMPLE === */}
-        <div className="flex justify-center space-x-4 mb-10">
-          <Link href="/" className="px-6 py-2 bg-blue-600 rounded-full font-bold shadow-lg shadow-blue-500/30">
+        <div className="flex justify-center p-1.5 bg-slate-900/80 border border-slate-800 rounded-full mb-10 shadow-lg">
+          <Link href="/" className="px-8 py-2.5 bg-blue-600 rounded-full font-bold text-white shadow-lg shadow-blue-500/30 transition-all">
             🏠 Home
           </Link>
-          <Link href="/riwayat" className="px-6 py-2 bg-gray-800 hover:bg-gray-700 rounded-full font-bold text-gray-400 transition-colors">
-            📂 Riwayat & Statistik
+          <Link href="/riwayat" className="px-8 py-2.5 hover:bg-slate-800 rounded-full font-bold text-slate-400 hover:text-slate-200 transition-all">
+            📂 Riwayat
           </Link>
         </div>
 
-        <h1 className="text-4xl font-extrabold text-center mb-8 bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
-          💸 College'$ Budgeting System
+        {/* === TITLE === */}
+        <h1 className="text-4xl md:text-5xl font-extrabold text-center mb-8 tracking-tight">
+          <span className="bg-gradient-to-r from-blue-400 to-purple-400 text-transparent bg-clip-text">
+            College'$
+          </span>
+          <br />
+          <span className="text-2xl md:text-3xl text-slate-400 font-bold mt-2 block">Budgeting System</span>
         </h1>
         
         {/* === BAGIAN INPUT === */}
-        <div className="bg-gray-900 p-8 rounded-2xl shadow-2xl border border-gray-800 mb-8">
-          <div className="space-y-6">
+        <div className="w-full bg-slate-900/60 p-6 md:p-8 rounded-3xl shadow-2xl border border-slate-800 relative">
+          <div className="space-y-5 relative z-10">
             <div>
-              <label className="block mb-2 text-gray-400">Deskripsi</label>
+              <label className="block mb-2 text-sm font-semibold text-slate-400">Deskripsi Pengeluaran</label>
               <input
                 type="text"
-                className="w-full p-4 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-purple-500 text-lg"
-                placeholder="Misal: Print Kartu..."
+                className="w-full p-4 rounded-xl bg-slate-950 text-white border border-slate-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all text-base placeholder-slate-600"
+                placeholder="Misal: Beli Kopi, Fotokopi..."
                 value={deskripsi}
                 onChange={(e) => setDeskripsi(e.target.value)}
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block mb-2 text-gray-400">Uang Anda (Rp)</label>
+                <label className="block mb-2 text-sm font-semibold text-slate-400">Uang Anda (Rp)</label>
                 <input
                   type="number"
-                  className="w-full p-4 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-blue-500 text-lg"
+                  className="w-full p-4 rounded-xl bg-slate-950 text-white border border-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all text-base placeholder-slate-600"
+                  placeholder="0"
                   value={saldo}
                   onChange={(e) => setSaldo(e.target.value)}
                 />
               </div>
               <div>
-                <label className="block mb-2 text-gray-400">Pengeluaran (Rp)</label>
+                <label className="block mb-2 text-sm font-semibold text-slate-400">Pengeluaran (Rp)</label>
                 <input
                   type="number"
-                  className="w-full p-4 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-blue-500 text-lg"
+                  className="w-full p-4 rounded-xl bg-slate-950 text-white border border-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all text-base placeholder-slate-600"
+                  placeholder="0"
                   value={pengeluaran}
                   onChange={(e) => setPengeluaran(e.target.value)}
                 />
@@ -123,23 +163,32 @@ export default function Home() {
             <button
               onClick={hitungDanSimpan}
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-4 rounded-lg transition-all transform active:scale-95"
+              className="mt-6 w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 px-4 rounded-xl shadow-lg shadow-purple-500/25 transition-all transform hover:-translate-y-1 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {loading ? "Sedang memproses..." : "Cek Cashflow Anda"}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  Sedang Menganalisa...
+                </span>
+              ) : "Cek Cashflow Anda"}
             </button>
           </div>
 
           {/* === BAGIAN HASIL (AUTO-SAVE) === */}
           {hasil && (
-            <div className={`mt-8 p-6 rounded-xl border-2 ${getWarnaZona(hasil.zona)} shadow-lg transition-all`}>
-              <div className="mb-4 inline-block bg-purple-900/60 border border-purple-400 text-purple-200 px-3 py-1 rounded-full text-xs font-bold uppercase">
-                Kategori: {hasil.kategori_ai}
+            <div className={`mt-8 p-6 rounded-2xl border transition-all duration-500 ease-out ${getWarnaZona(hasil.zona)}`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="inline-block bg-slate-950/50 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Kategori: <span className="text-white">{hasil.kategori_ai}</span>
+                </div>
               </div>
               
-              <div className="text-3xl font-bold">
-                {hasil.sisa_hari} <span className="text-lg font-normal"> Hari</span>
+              <div className="text-4xl font-black tracking-tighter text-white">
+                {hasil.sisa_hari} <span className="text-xl font-medium opacity-80 tracking-normal text-slate-300">Hari</span>
               </div>
-              <div className="mt-2 text-sm italic">{hasil.pesan}</div>
+              <div className="mt-3 pt-3 border-t border-slate-800/50 text-sm md:text-base font-medium leading-relaxed opacity-90 text-slate-200">
+                "{hasil.pesan}"
+              </div>
             </div>
           )}
         </div>

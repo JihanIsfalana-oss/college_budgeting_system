@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
 import Link from "next/link";
 
 export default function Login() {
@@ -9,7 +8,17 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [toast, setToast] = useState<{ msg: string; type: "error" | "success" } | null>(null);
+  
   const router = useRouter();
+
+  const showToast = (msg: string, type: "error" | "success") => {
+    setToast({ msg, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3000);
+  };
 
   const handleLogin = async (e: any) => {
     e.preventDefault();
@@ -23,57 +32,73 @@ export default function Login() {
       const data = await res.json();
       
       if (data.error) {
-        alert("❌ " + data.error);
+        showToast(data.error, "error");
       } else {
         localStorage.setItem("user_email", data.user_email);
         localStorage.setItem("user_nama", data.user_nama);
-        alert("✅ " + data.message);
-        router.push("/"); 
+        showToast(data.message, "success");
+        setTimeout(() => {
+          router.push("/");
+        }, 1000); 
       }
     } catch (err) {
-      alert("Server Error!");
+      showToast("Server Error!", "error");
     }
     setLoading(false);
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-gray-950 text-white font-mono">
-      <div className="w-full max-w-md bg-gray-900 p-8 rounded-2xl shadow-2xl border border-gray-800">
-        <h1 className="text-3xl font-extrabold text-center mb-2 bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
-          Login Page
+    <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-slate-950 text-slate-200 font-sans relative selection:bg-purple-500/30">
+      
+      {/* === CUSTOM TOAST NOTIFICATION === */}
+      {toast && (
+        <div className={`fixed top-8 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-2xl border flex items-center gap-3 animate-bounce shadow-black/50 ${
+          toast.type === "error" 
+            ? "bg-red-950/90 border-red-500/50 text-red-200" 
+            : "bg-green-950/90 border-green-500/50 text-green-200"
+        }`}>
+          <span className="text-xl">{toast.type === "error" ? "⚠️" : "✅"}</span>
+          <span className="font-bold text-sm tracking-wide">{toast.msg}</span>
+        </div>
+      )}
+
+      <div className="w-full max-w-md bg-slate-900/60 p-8 rounded-3xl shadow-2xl border border-slate-800">
+        <h1 className="text-4xl font-extrabold text-center mb-2 tracking-tight">
+          <span className="bg-gradient-to-r from-blue-400 to-purple-400 text-transparent bg-clip-text">
+            Login CBS
+          </span>
         </h1>
-        <p className="text-center text-gray-400 mb-8 text-sm">College Budgeting System</p>
+        <p className="text-center text-slate-400 mb-8 font-medium">Track Your Money to Survive College Life</p>
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block mb-2 text-gray-400">Email</label>
+            <label className="block mb-2 text-sm font-semibold text-slate-400">Email</label>
             <input
               type="email"
               required
-              className="w-full p-4 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-blue-500 transition-colors"
-              placeholder="Email Anda"
+              className="w-full p-4 rounded-xl bg-slate-950 text-white border border-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all text-base placeholder-slate-600"
+              placeholder="Masukkan email Anda"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
           <div className="relative">
-            <label className="block mb-2 text-gray-400">Password</label>
+            <label className="block mb-2 text-sm font-semibold text-slate-400">Password</label>
             <input
-              type={showPassword ? "text" : "password"} 
+              type={showPassword ? "text" : "password"}
               required
-              className="w-full p-4 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-blue-500 transition-colors pr-12"
-              placeholder="Password Anda"
+              className="w-full p-4 rounded-xl bg-slate-950 text-white border border-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all text-base placeholder-slate-600 pr-12"
+              placeholder="Minimal 6 karakter"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            {/* FITUR TAHAN MATA */}
             <button
               type="button"
               onMouseDown={() => setShowPassword(true)}
               onMouseUp={() => setShowPassword(false)}
-              onMouseLeave={() => setShowPassword(false)} 
-              className="absolute right-4 top-11 text-xl opacity-60 hover:opacity-100 cursor-pointer"
+              onMouseLeave={() => setShowPassword(false)}
+              className="absolute right-4 top-10 text-xl opacity-50 hover:opacity-100 cursor-pointer transition-opacity"
             >
               {showPassword ? "😲" : "😑"}
             </button>
@@ -82,34 +107,15 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-lg transition-transform active:scale-95"
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/25 transition-all transform hover:-translate-y-1 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
           >
-            {loading ? "Mengecek..." : "Masuk"}
+            {loading ? "Mengecek Akses..." : "Masuk 🚀"}
           </button>
         </form>
 
-        <div className="my-6 flex items-center justify-center space-x-2">
-          <div className="h-px bg-gray-700 w-1/3"></div>
-          <span className="text-gray-500 text-xs"> LOGIN VIA</span>
-          <div className="h-px bg-gray-700 w-1/3"></div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <button 
-            type="button"
-            onClick={() => signIn("google")} 
-            className="p-3 bg-red-900/30 text-red-500 border border-red-900/50 rounded-lg hover:bg-red-900/50 transition-colors text-sm font-bold"
-          >
-            G Google
-          </button>
-          <button className="p-3 bg-blue-900/30 text-blue-500 border border-blue-900/50 rounded-lg hover:bg-blue-900/50 transition-colors text-sm font-bold">
-            f Facebook
-          </button>
-        </div>
-
-        <p className="text-center text-gray-400 text-sm">
+        <p className="text-center mt-8 text-slate-400 text-sm font-medium">
           Belum punya akun?{" "}
-          <Link href="/register" className="text-blue-400 hover:underline">
+          <Link href="/register" className="text-blue-400 hover:text-blue-300 transition-colors">
             Daftar di sini
           </Link>
         </p>

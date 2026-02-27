@@ -9,7 +9,17 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [toast, setToast] = useState<{ msg: string; type: "error" | "success" } | null>(null);
+  
   const router = useRouter();
+
+  const showToast = (msg: string, type: "error" | "success") => {
+    setToast({ msg, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3000);
+  };
 
   const handleRegister = async (e: any) => {
     e.preventDefault();
@@ -23,56 +33,73 @@ export default function Register() {
       const data = await res.json();
       
       if (data.error) {
-        alert("❌ " + data.error);
+        showToast(data.error, "error");
       } else {
-        alert("✅ " + data.message);
-        router.push("/login"); // Lempar ke halaman login
+        showToast("Akun berhasil dibuat! Silakan login.", "success");
+        setTimeout(() => {
+          router.push("/login");
+        }, 1500); // Kasih jeda biar notif kebaca sebelum pindah halaman
       }
     } catch (err) {
-      alert("Server Error!");
+      showToast("Server Error!", "error");
     }
     setLoading(false);
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-gray-950 text-white font-mono">
-      <div className="w-full max-w-md bg-gray-900 p-8 rounded-2xl shadow-2xl border border-gray-800">
-        <h1 className="text-3xl font-extrabold text-center mb-2 text-purple-400">
-          Buat Akun Baru
-        </h1>
-        <p className="text-center text-gray-400 mb-8 text-sm">Track Your Budget To Stay Financially Healthy!</p>
+    <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-slate-950 text-slate-200 font-sans relative selection:bg-purple-500/30">
+      
+      {/* === CUSTOM TOAST NOTIFICATION === */}
+      {toast && (
+        <div className={`fixed top-8 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-2xl border flex items-center gap-3 animate-bounce shadow-black/50 ${
+          toast.type === "error" 
+            ? "bg-red-950/90 border-red-500/50 text-red-200" 
+            : "bg-green-950/90 border-green-500/50 text-green-200"
+        }`}>
+          <span className="text-xl">{toast.type === "error" ? "⚠️" : "✅"}</span>
+          <span className="font-bold text-sm tracking-wide">{toast.msg}</span>
+        </div>
+      )}
 
-        <form onSubmit={handleRegister} className="space-y-6">
+      <div className="w-full max-w-md bg-slate-900/60 p-8 rounded-3xl shadow-2xl border border-slate-800">
+        <h1 className="text-4xl font-extrabold text-center mb-2 tracking-tight">
+          <span className="bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text">
+            Buat Akun CBS
+          </span>
+        </h1>
+        <p className="text-center text-slate-400 mb-8 font-medium">Track Your Money to Survive College Life</p>
+
+        <form onSubmit={handleRegister} className="space-y-5">
           <div>
-            <label className="block mb-2 text-gray-400">Nama Panggilan</label>
+            <label className="block mb-2 text-sm font-semibold text-slate-400">Nama Panggilan</label>
             <input
               type="text"
               required
-              className="w-full p-4 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-purple-500"
-              placeholder="Nama yang akan muncul di dashboard"
+              className="w-full p-4 rounded-xl bg-slate-950 text-white border border-slate-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all text-base placeholder-slate-600"
+              placeholder="Falan"
               value={nama}
               onChange={(e) => setNama(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block mb-2 text-gray-400">Email</label>
+            <label className="block mb-2 text-sm font-semibold text-slate-400">Email</label>
             <input
               type="email"
               required
-              className="w-full p-4 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-purple-500"
-              placeholder="Email anda (untuk login)"
+              className="w-full p-4 rounded-xl bg-slate-950 text-white border border-slate-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all text-base placeholder-slate-600"
+              placeholder="Masukkan email Anda"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
           <div className="relative">
-            <label className="block mb-2 text-gray-400">Password</label>
+            <label className="block mb-2 text-sm font-semibold text-slate-400">Password</label>
             <input
               type={showPassword ? "text" : "password"}
               required
-              className="w-full p-4 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-purple-500 pr-12"
+              className="w-full p-4 rounded-xl bg-slate-950 text-white border border-slate-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all text-base placeholder-slate-600 pr-12"
               placeholder="Minimal 6 karakter"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -82,7 +109,7 @@ export default function Register() {
               onMouseDown={() => setShowPassword(true)}
               onMouseUp={() => setShowPassword(false)}
               onMouseLeave={() => setShowPassword(false)}
-              className="absolute right-4 top-11 text-xl opacity-60 hover:opacity-100 cursor-pointer"
+              className="absolute right-4 top-10 text-xl opacity-50 hover:opacity-100 cursor-pointer transition-opacity"
             >
               {showPassword ? "😲" : "😑"}
             </button>
@@ -91,15 +118,15 @@ export default function Register() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 rounded-lg transition-transform active:scale-95"
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/25 transition-all transform hover:-translate-y-1 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-4"
           >
-            {loading ? "Memproses..." : "Daftar Sekarang"}
+            {loading ? "Memproses..." : "Daftar Sekarang 🚀"}
           </button>
         </form>
 
-        <p className="text-center mt-6 text-gray-400 text-sm">
+        <p className="text-center mt-8 text-slate-400 text-sm font-medium">
           Sudah punya akun?{" "}
-          <Link href="/login" className="text-purple-400 hover:underline">
+          <Link href="/login" className="text-purple-400 hover:text-purple-300 transition-colors">
             Login di sini
           </Link>
         </p>
