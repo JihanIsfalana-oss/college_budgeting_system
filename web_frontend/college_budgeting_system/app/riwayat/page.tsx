@@ -45,14 +45,14 @@ export default function Riwayat() {
     }
 
     try {
-      const resTable = await fetch(`http://127.0.0.1:8000/riwayat?user_email=${email}`);
+      const resTable = await fetch(`https://isfalana-cbs-backend-api.hf.space/riwayat?user_email=${email}`);
       const dataTable = await resTable.json();
       
       if (Array.isArray(dataTable)) {
         setRiwayat(dataTable);
       }
 
-      const resStat = await fetch(`http://127.0.0.1:8000/statistik?user_email=${email}`);
+      const resStat = await fetch(`https://isfalana-cbs-backend-api.hf.space/statistik?user_email=${email}`);
       const dataStat = await resStat.json();
       if (Array.isArray(dataStat)) {
         setStatistik(dataStat);
@@ -73,7 +73,7 @@ export default function Riwayat() {
     if(!confirm("Yakin mau hapus histori pengeluaran ini?")) return;
     
     try {
-      const res = await fetch(`http://127.0.0.1:8000/hapus-riwayat/${id}?user_email=${email}`, { method: "DELETE" });
+      const res = await fetch(`https://isfalana-cbs-backend-api.hf.space/hapus-riwayat/${id}?user_email=${email}`, { method: "DELETE" });
       if (res.ok) {
         showToast("Histori berhasil dihapus!", "success");
         fetchData(); 

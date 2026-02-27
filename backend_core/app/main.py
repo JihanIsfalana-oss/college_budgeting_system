@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel
 from passlib.context import CryptContext 
-from .db import models, database
+import models
+import database
 import sys
 import os
 import joblib
@@ -21,7 +22,7 @@ except ImportError:
     survival_lib = None 
 
 # Load AI Engine
-ai_model_path = os.path.join(BASE_DIR, "ai_engine", "kategori_model.pkl")
+ai_model_path = os.path.join(BASE_DIR, "kategori_model.pkl")
 try:
     kategori_ai = joblib.load(ai_model_path)
     print("✅ Otak AI Berhasil Dimuat!")

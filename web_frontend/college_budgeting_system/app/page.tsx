@@ -51,7 +51,7 @@ export default function Home() {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://127.0.0.1:8000/cek-survival-otomatis?user_email=${email}&saldo=${saldo}&pengeluaran=${pengeluaran}&deskripsi=${deskripsi}`,
+        `https://isfalana-cbs-backend-api.hf.space/cek-survival-otomatis?user_email=${email}&saldo=${saldo}&pengeluaran=${pengeluaran}&deskripsi=${deskripsi}`,
         { method: "POST" }
       );
       const data = await res.json();
