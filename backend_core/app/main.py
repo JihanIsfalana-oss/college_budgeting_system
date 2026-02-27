@@ -40,7 +40,7 @@ app = FastAPI(title="College Budgeting API V4 - Auth Edition")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "https://college-budgeting-system.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
