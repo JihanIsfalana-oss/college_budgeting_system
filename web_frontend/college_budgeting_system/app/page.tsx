@@ -141,7 +141,7 @@ export default function Home() {
             <select 
               value={kategoriAsli} 
               onChange={(e) => setKategoriAsli(e.target.value)}
-              className="p-2 border rounded"
+              className="grid grid-cols-1 md:grid-cols-2 gap-5"
             >
               <option value="Makan">Makan</option>
               <option value="Transportasi">Transportasi</option>
