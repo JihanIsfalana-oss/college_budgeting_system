@@ -12,7 +12,7 @@ import joblib
 
 models.Base.metadata.create_all(bind=database.engine)
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 
 # Load C++ Engine
@@ -38,6 +38,10 @@ def get_db():
         db.close()
 
 app = FastAPI(title="College Budgeting API V4 - Auth Edition")
+
+@app.get("/")
+def read_root():
+    return {"status": "🔥 Otak AI CBS Berjalan!"}
 
 app.add_middleware(
     CORSMiddleware,

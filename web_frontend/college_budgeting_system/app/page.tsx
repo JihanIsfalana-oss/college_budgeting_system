@@ -9,6 +9,7 @@ export default function Home() {
   const [pengeluaran, setPengeluaran] = useState("");
   const [hasil, setHasil] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [kategoriAsli, setKategoriAsli] = useState("Makan");
   
   // State untuk Custom Alert (Toast)
   const [toast, setToast] = useState<{ msg: string; type: "error" | "success" } | null>(null);
@@ -51,7 +52,7 @@ export default function Home() {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://isfalana-cbs-backend-api.hf.space/cek-survival-otomatis?user_email=${email}&saldo=${saldo}&pengeluaran=${pengeluaran}&deskripsi=${deskripsi}`,
+        `https://isfalana-cbs-backend-api.hf.space/cek-survival-otomatis?user_email=${email}&saldo=${saldo}&pengeluaran=${pengeluaran}&deskripsi=${deskripsi}&kategori_asli=${kategoriAsli}`,
         { method: "POST" }
       );
       const data = await res.json();
@@ -136,6 +137,18 @@ export default function Home() {
                 onChange={(e) => setDeskripsi(e.target.value)}
               />
             </div>
+
+            <select 
+              value={kategoriAsli} 
+              onChange={(e) => setKategoriAsli(e.target.value)}
+              className="p-2 border rounded"
+            >
+              <option value="Makan">Makan</option>
+              <option value="Transportasi">Transportasi</option>
+              <option value="Kebutuhan Pokok">Kebutuhan Pokok</option>
+              <option value="Hiburan">Hiburan</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
