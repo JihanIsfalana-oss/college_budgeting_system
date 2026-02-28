@@ -141,13 +141,23 @@ export default function Home() {
             <select 
               value={kategoriAsli} 
               onChange={(e) => setKategoriAsli(e.target.value)}
-              className="grid grid-cols-1 md:grid-cols-2 gap-5"
+              className="p-2 border border-slate-700 rounded bg-slate-950 text-white"
             >
-              <option value="Makan">Makan</option>
-              <option value="Transportasi">Transportasi</option>
-              <option value="Kebutuhan Pokok">Kebutuhan Pokok</option>
-              <option value="Hiburan">Hiburan</option>
-              <option value="Lainnya">Lainnya</option>
+              <option 
+                className="grid grid-cols-1 md:grid-cols-2 gap-5"
+                value="Makan">Makan</option>
+              <option 
+                className="grid grid-cols-1 md:grid-cols-2 gap-5"
+                value="Transportasi">Transportasi</option>
+              <option 
+                className="grid grid-cols-1 md:grid-cols-2 gap-5"
+                value="Kebutuhan Pokok">Kebutuhan Pokok</option>
+              <option 
+                className="grid grid-cols-1 md:grid-cols-2 gap-5"
+                value="Hiburan">Hiburan</option>
+              <option 
+                className="grid grid-cols-1 md:grid-cols-2 gap-5"
+                value="Lainnya">Lainnya</option>
             </select>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
