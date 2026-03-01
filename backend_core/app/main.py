@@ -8,11 +8,28 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel
 from passlib.context import CryptContext 
+from sqlalchemy import extract 
+from datetime import datetime, timedelta 
+from pydantic import BaseModel
+from typing import Optional
 import models
 import database
 import sys
 import os
 import joblib
+
+class ProfileUpdate(BaseModel):
+    user_email: str
+    nama: Optional[str] = None
+    foto_profil: Optional[str] = None
+    pekerjaan: Optional[str] = None
+    umur: Optional[int] = None
+    tanggal_lahir: Optional[str] = None
+
+class TargetTabunganCreate(BaseModel):
+    user_email: str
+    tujuan: str
+    nominal_target: float
 
 models.Base.metadata.create_all(bind=database.engine)
 
@@ -108,17 +125,14 @@ def register_user(user: UserRegister, db: Session = Depends(get_db)):
     cek_user = db.query(models.User).filter(models.User.email == user.email).first()
     if cek_user:
         return {"error": "Email sudah terdaftar!"}
-    
-    # Acak Password (Hash)
+
     hashed_password = pwd_context.hash(user.password)
-    
-    # Simpan ke Database
+
     new_user = models.User(nama=user.nama, email=user.email, password_hash=hashed_password, provider="local")
     db.add(new_user)
     db.commit()
     return {"status": "success", "message": "Akun berhasil dibuat!"}
 
-# 2. Endpoint Masuk (Login)
 @app.post("/login")
 def login_user(user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
@@ -131,6 +145,94 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)):
         "message": f"Welcome back, {db_user.nama}!",
         "user_email": db_user.email,
         "user_nama": db_user.nama
+    }
+    
+# ==========================================
+# 1. API UPDATE PROFILE & COOLDOWN GANTI NAMA
+# ==========================================
+@app.put("/update-profile")
+def update_profile(data: ProfileUpdate, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == data.user_email).first()
+    if not user:
+        return {"error": "User tidak ditemukan"}
+
+    if data.nama and data.nama != user.nama:
+        if user.terakhir_ganti_nama:
+            selisih_hari = (datetime.now() - user.terakhir_ganti_nama).days
+            if selisih_hari < 30:
+                sisa = 30 - selisih_hari
+                return {"error": f"Gagal! Nama hanya bisa diganti 1 bulan sekali. Tunggu {sisa} hari lagi."}
+        user.nama = data.nama
+        user.terakhir_ganti_nama = datetime.now()
+
+    if data.foto_profil is not None: user.foto_profil = data.foto_profil
+    if data.pekerjaan is not None: user.pekerjaan = data.pekerjaan
+    if data.umur is not None: user.umur = data.umur
+    if data.tanggal_lahir is not None: user.tanggal_lahir = data.tanggal_lahir
+
+    db.commit()
+    return {"status": "success", "message": "Profil berhasil diperbarui!"}
+
+# ==========================================
+# 2. API AMBIL PROFILE USER
+# ==========================================
+@app.get("/profile")
+def get_profile(user_email: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == user_email).first()
+    if not user:
+        return {"error": "User tidak ditemukan"}
+    return {
+        "nama": user.nama,
+        "email": user.email,
+        "foto_profil": user.foto_profil,
+        "pekerjaan": user.pekerjaan,
+        "umur": user.umur,
+        "tanggal_lahir": user.tanggal_lahir,
+        "terakhir_ganti_nama": user.terakhir_ganti_nama
+    }
+
+# ==========================================
+# 3. API TARGET TABUNGAN
+# ==========================================
+@app.post("/target-tabungan")
+def buat_target(data: TargetTabunganCreate, db: Session = Depends(get_db)):
+    target_baru = models.TargetTabungan(
+        user_email=data.user_email,
+        tujuan=data.tujuan,
+        nominal_target=data.nominal_target
+    )
+    db.add(target_baru)
+    db.commit()
+    return {"status": "success", "message": f"Target '{data.tujuan}' berhasil dibuat!"}
+
+@app.get("/target-tabungan")
+def get_target(user_email: str, db: Session = Depends(get_db)):
+    targets = db.query(models.TargetTabungan).filter(models.TargetTabungan.user_email == user_email).all()
+    return targets
+
+# ==========================================
+# 4. API ARSIP BULANAN & TOTAL PENGELUARAN
+# ==========================================
+@app.get("/riwayat-bulanan")
+def riwayat_bulanan(user_email: str, bulan: int = None, tahun: int = None, db: Session = Depends(get_db)):
+    sekarang = datetime.now()
+    b = bulan if bulan else sekarang.month
+    t = tahun if tahun else sekarang.year
+
+    records = db.query(models.SurvivalRecord).filter(
+        models.SurvivalRecord.user_email == user_email,
+        extract('month', models.SurvivalRecord.waktu_input) == b,
+        extract('year', models.SurvivalRecord.waktu_input) == t
+    ).order_by(models.SurvivalRecord.id.desc()).all()
+
+    total_pengeluaran = sum(r.pengeluaran_harian for r in records)
+
+    return {
+        "status": "success",
+        "bulan": b,
+        "tahun": t,
+        "total_pengeluaran_bulan_ini": total_pengeluaran,
+        "data_riwayat": records
     }
 
 # ==========================================
