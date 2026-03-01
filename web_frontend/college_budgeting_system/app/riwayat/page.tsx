@@ -2,11 +2,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface RiwayatItem {
   id: number;
   saldo: number;
   pengeluaran_harian: number;
+  deskripsi?: string; 
   kategori_ai: string;
   sisa_hari: string;
   zona: string;
@@ -14,20 +16,24 @@ interface RiwayatItem {
   pesan: string;
 }
 
-interface StatItem {
-  kategori: string;
-  total: number;
+interface ChartData {
+  name: string;
+  value: number;
 }
 
 export default function Riwayat() {
   const [riwayat, setRiwayat] = useState<RiwayatItem[]>([]);
-  const [statistik, setStatistik] = useState<StatItem[]>([]);
+  const [totalPengeluaran, setTotalPengeluaran] = useState<number>(0);
+  const [dataGrafik, setDataGrafik] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
   
   // State untuk Toast Notification
   const [toast, setToast] = useState<{ msg: string; type: "error" | "success" } | null>(null);
   
   const router = useRouter();
+
+  // Warna aesthetic buat Donut Chart (Dark Mode Friendly)
+  const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
   const showToast = (msg: string, type: "error" | "success") => {
     setToast({ msg, type });
@@ -45,17 +51,27 @@ export default function Riwayat() {
     }
 
     try {
-      const resTable = await fetch(`https://isfalana-cbs-backend-api.hf.space/riwayat?user_email=${email}`);
-      const dataTable = await resTable.json();
+      // Nembak ke API baru yang udah ngefilter bulan ini
+      const res = await fetch(`https://isfalana-cbs-backend-api.hf.space/riwayat-bulanan?user_email=${email}`);
+      const data = await res.json();
       
-      if (Array.isArray(dataTable)) {
-        setRiwayat(dataTable);
-      }
+      if (data.status === "success") {
+        setRiwayat(data.data_riwayat);
+        setTotalPengeluaran(data.total_pengeluaran_bulan_ini);
 
-      const resStat = await fetch(`https://isfalana-cbs-backend-api.hf.space/statistik?user_email=${email}`);
-      const dataStat = await resStat.json();
-      if (Array.isArray(dataStat)) {
-        setStatistik(dataStat);
+        // Olah data buat Grafik: Kelompokin pengeluaran berdasarkan Kategori
+        const rekapKategori: Record<string, number> = {};
+        data.data_riwayat.forEach((item: RiwayatItem) => {
+          const kategori = item.kategori_ai || "Lainnya";
+          rekapKategori[kategori] = (rekapKategori[kategori] || 0) + item.pengeluaran_harian;
+        });
+
+        // Format data buat Recharts
+        const formatGrafik = Object.keys(rekapKategori).map((key) => ({
+          name: key,
+          value: rekapKategori[key],
+        }));
+        setDataGrafik(formatGrafik);
       }
     } catch (err) {
       showToast("Gagal mengambil data dari server!", "error");
@@ -122,33 +138,57 @@ export default function Riwayat() {
           Dashboard <span className="text-blue-400">Keuangan</span>
         </h1>
 
-        {/* BAGIAN STATISTIK */}
+        {/* BAGIAN VISUALISASI CASHFLOW BULAN INI */}
         <div className="bg-slate-900/60 p-6 md:p-8 rounded-3xl border border-slate-800 mb-8 shadow-xl">
           <h2 className="text-lg font-bold mb-6 flex items-center gap-2 text-slate-300">
-            📊 <span className="bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text">Total Pengeluaran</span>
+            📊 <span className="bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text">Cashflow Bulan Ini</span>
           </h2>
           
           {loading ? (
-            <div className="animate-pulse flex space-x-4">
-              <div className="flex-1 space-y-4 py-1">
-                <div className="h-20 bg-slate-800 rounded-xl"></div>
-              </div>
-            </div>
+            <div className="animate-pulse h-64 bg-slate-800 rounded-xl"></div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {statistik.map((stat, idx) => (
-                <div key={idx} className="bg-slate-950/50 p-5 rounded-2xl border border-slate-800/80 hover:border-slate-700 transition-colors group">
-                  <div className="text-xs text-slate-500 uppercase font-semibold tracking-wider mb-2 group-hover:text-blue-400 transition-colors">
-                    {stat.kategori || "Lainnya"}
-                  </div>
-                  <div className="text-xl md:text-2xl font-black text-white">
-                    <span className="text-slate-500 text-sm md:text-lg mr-1">Rp</span>
-                    {stat.total.toLocaleString()}
-                  </div>
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              {/* Box Total Pengeluaran */}
+              <div className="bg-slate-950/50 p-6 rounded-2xl border border-slate-800/80 w-full md:w-1/2 text-center shadow-inner">
+                <p className="text-sm text-slate-500 uppercase font-semibold tracking-wider mb-2">Total</p>
+                <div className="text-3xl md:text-4xl font-black text-red-400 drop-shadow-md">
+                  <span className="text-slate-500 text-lg mr-1">Rp</span>
+                  {totalPengeluaran.toLocaleString("id-ID")}
                 </div>
-              ))}
-              {statistik.length === 0 && (
-                <p className="text-sm text-slate-500 col-span-full text-center py-4 italic">Belum ada statistik yang tercatat.</p>
+              </div>
+
+              {/* Grafik Donat Recharts */}
+              {dataGrafik.length > 0 ? (
+                <div className="w-full md:w-1/2 h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={dataGrafik}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={5}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {dataGrafik.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value: any) => `Rp ${Number(value).toLocaleString("id-ID")}`}
+                        contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', color: '#f8fafc' }}
+                        itemStyle={{ color: '#cbd5e1' }}
+                      />
+                      <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px', color: '#94a3b8' }}/>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="w-full md:w-1/2 flex items-center justify-center h-64">
+                  <p className="text-slate-500 italic text-sm">Belum ada data.</p>
+                </div>
               )}
             </div>
           )}
@@ -166,8 +206,8 @@ export default function Riwayat() {
              </div>
           ) : riwayat.length === 0 ? (
             <div className="text-center py-10 bg-slate-950/30 rounded-2xl border border-slate-800 border-dashed">
-              <p className="text-slate-500 font-medium">Belum ada data transaksi tersimpan.</p>
-              <p className="text-slate-600 text-sm mt-1">Mulai catat pengeluaran di halaman Home!</p>
+              <p className="text-slate-500 font-medium">Belum ada data transaksi bulan ini.</p>
+              <p className="text-slate-600 text-sm mt-1">Mulai catat pengeluaran anda!</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -189,13 +229,18 @@ export default function Riwayat() {
                       </span>
                     </div>
                     
+                    {/* Munculin deskripsi biar jelas buat apa pengeluarannya */}
+                    {item.deskripsi && (
+                      <p className="text-white font-bold mb-2 capitalize">{item.deskripsi}</p>
+                    )}
+
                     <div className="flex flex-col md:flex-row md:items-baseline gap-1 md:gap-3 mb-1">
                       <div className="text-sm text-slate-400 font-medium">
-                        Pengeluaran: <span className="text-red-400 font-bold tracking-tight">Rp {item.pengeluaran_harian?.toLocaleString()}</span>
+                        Pengeluaran: <span className="text-red-400 font-bold tracking-tight">Rp {item.pengeluaran_harian?.toLocaleString("id-ID")}</span>
                       </div>
                       <div className="hidden md:block text-slate-700">•</div>
                       <div className="text-sm text-slate-500">
-                        Uang Saya: <span className="text-slate-300">Rp {item.saldo.toLocaleString()}</span>
+                        Uang Saya: <span className="text-slate-300">Rp {item.saldo.toLocaleString("id-ID")}</span>
                       </div>
                     </div>
                     
