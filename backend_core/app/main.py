@@ -1,3 +1,7 @@
+from fastapi import BackgroundTasks 
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.svm import LinearSVC
+from sklearn.pipeline import Pipeline
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -37,11 +41,39 @@ def get_db():
     finally:
         db.close()
 
+# ==========================================
+# [+] MESIN AI CONTINUOUS LEARNING
+# ==========================================
+def latih_ulang_ai(db: Session):
+    global kategori_ai
+    try:
+        records = db.query(models.SurvivalRecord).filter(models.SurvivalRecord.deskripsi != None).all()
+
+        if len(records) < 5:
+            print("⏳ Data masih sedikit, nunggu user nginput lagi...")
+            return
+
+        X = [r.deskripsi for r in records]
+        y = [r.kategori_ai for r in records]
+
+        pipeline = Pipeline([
+            ('tfidf', TfidfVectorizer(ngram_range=(1, 2), lowercase=True)),
+            ('clf', LinearSVC(C=1.0, random_state=42))
+        ])
+
+        pipeline.fit(X, y)
+
+        joblib.dump(pipeline, ai_model_path)
+        kategori_ai = pipeline
+        print(f"🚀 AI Selesai Di-upgrade! Total Belajar dari {len(records)} Dataset.")
+    except Exception as e:
+        print(f"⚠️ Gagal melatih AI: {e}")
+
 app = FastAPI(title="College Budgeting API V4 - Auth Edition")
 
 @app.get("/")
 def read_root():
-    return {"status": "🔥 Otak AI CBS Berjalan!"}
+    return {"status": "🔥 AI CBS Berjalan!"}
 
 app.add_middleware(
     CORSMiddleware,
@@ -104,15 +136,25 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)):
 # ==========================================
 # ENDPOINT LAMA (SEKARANG TERKUNCI PER USER)
 # ==========================================
-
 @app.post("/cek-survival-otomatis")
-def cek_survival_otomatis(user_email: str, saldo: float, pengeluaran: float, deskripsi: str, db: Session = Depends(get_db)):
+def cek_survival_otomatis(
+    user_email: str, 
+    saldo: float, 
+    pengeluaran: float, 
+    deskripsi: str, 
+    kategori_asli: str, 
+    background_tasks: BackgroundTasks, 
+    db: Session = Depends(get_db)
+):
     if not survival_lib:
-        return {"error": "Server Error!"}
+        return {"error": "Server C++ Error!"}
 
     kategori_tebakan = "Lainnya"
     if kategori_ai and deskripsi.strip():
-        kategori_tebakan = kategori_ai.predict([deskripsi])[0]
+        try:
+            kategori_tebakan = kategori_ai.predict([deskripsi])[0]
+        except:
+            pass
 
     sisa_hari = survival_lib.prediksi_bangkrut(saldo, pengeluaran)
     
@@ -133,7 +175,8 @@ def cek_survival_otomatis(user_email: str, saldo: float, pengeluaran: float, des
         user_email=user_email,
         saldo=saldo,
         pengeluaran_harian=pengeluaran,
-        kategori_ai=kategori_tebakan, 
+        deskripsi=deskripsi, 
+        kategori_ai=kategori_asli, 
         sisa_hari=status_hari,
         pesan=pesan,
         zona=zona
@@ -142,8 +185,16 @@ def cek_survival_otomatis(user_email: str, saldo: float, pengeluaran: float, des
     db.commit()
     db.refresh(data_baru)
 
-    return {"status": "success", "zona": zona, "sisa_hari": status_hari, "kategori_ai": kategori_tebakan, "pesan": pesan}
+    background_tasks.add_task(latih_ulang_ai, db)
 
+    return {
+        "status": "success", 
+        "zona": zona, 
+        "sisa_hari": status_hari, 
+        "kategori_tebakan_ai": kategori_tebakan, 
+        "pesan": pesan
+    }
+    
 @app.get("/statistik")
 def ambil_statistik(user_email: str, db: Session = Depends(get_db)):
     stats = db.query(
