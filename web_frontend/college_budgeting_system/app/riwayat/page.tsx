@@ -195,7 +195,7 @@ export default function Riwayat() {
                       </div>
                       <div className="hidden md:block text-slate-700">•</div>
                       <div className="text-sm text-slate-500">
-                        Sisa Saldo: <span className="text-slate-300">Rp {item.saldo.toLocaleString()}</span>
+                        Uang Saya: <span className="text-slate-300">Rp {item.saldo.toLocaleString()}</span>
                       </div>
                     </div>
                     
