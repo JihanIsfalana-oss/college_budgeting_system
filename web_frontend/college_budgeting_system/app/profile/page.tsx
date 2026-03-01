@@ -106,11 +106,20 @@ export default function Profile() {
       )}
 
       <div className="z-10 max-w-2xl w-full">
-        {/* NAVBAR */}
-        <div className="flex justify-center p-1.5 bg-slate-900/80 border border-slate-800 rounded-full mb-10 shadow-lg mx-auto w-fit gap-2">
-          <Link href="/" className="px-6 py-2 hover:bg-slate-800 rounded-full font-bold text-slate-400 transition-all">🏠 Home</Link>
-          <Link href="/riwayat" className="px-6 py-2 hover:bg-slate-800 rounded-full font-bold text-slate-400 transition-all">📂 Riwayat</Link>
-          <Link href="/profile" className="px-6 py-2 bg-blue-600 rounded-full font-bold text-white shadow-lg transition-all">👤 Profil</Link>
+        {/* === NAVBAR TERBARU === */}
+        <div className="flex flex-wrap justify-center gap-2 p-1.5 bg-slate-900/80 border border-slate-800 rounded-full mb-10 shadow-lg mx-auto w-fit">
+          <Link href="/" className="px-5 py-2 bg-blue-600 rounded-full font-bold text-white shadow-lg shadow-blue-500/30 transition-all text-sm md:text-base">
+            🏠 Home
+          </Link>
+          <Link href="/riwayat" className="px-5 py-2 hover:bg-slate-800 rounded-full font-bold text-slate-400 transition-all text-sm md:text-base">
+            📂 Riwayat
+          </Link>
+          <Link href="/profile" className="px-5 py-2 hover:bg-slate-800 rounded-full font-bold text-slate-400 transition-all text-sm md:text-base">
+            👤 Profil
+          </Link>
+          <Link href="/tabungan" className="px-5 py-2 hover:bg-slate-800 rounded-full font-bold text-slate-400 transition-all text-sm md:text-base">
+            🎯 Tabungan
+          </Link>
         </div>
 
         <div className="bg-slate-900/60 p-8 rounded-3xl border border-slate-800 shadow-xl">
