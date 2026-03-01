@@ -185,7 +185,7 @@ export default function Riwayat() {
                         </span>
                       </div>
                       <span className="text-xs font-medium text-slate-500">
-                        {new Date(item.waktu_input).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit' })}
+                        {new Date(item.waktu_input).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
                     </div>
                     
