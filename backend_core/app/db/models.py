@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, Integer, String, Float, DateTime
 from datetime import datetime
 from database import Base
 
@@ -21,4 +21,4 @@ class SurvivalRecord(Base):
     sisa_hari = Column(String)
     pesan = Column(String)
     zona = Column(String)
-    waktu_input = Column(String, default=datetime.now)
+    waktu_input = Column(DateTime, default=datetime.now)
