@@ -37,7 +37,7 @@ export default function Profile() {
           setFormData({
             nama: data.nama || "",
             email: data.email || "",
-            pekerjaan: data.pekerjaan || "Mahasiswa Teknik Informatika",
+            pekerjaan: data.pekerjaan || "Mahasiswa",
             umur: data.umur || "",
             tanggal_lahir: data.tanggal_lahir || "",
           });

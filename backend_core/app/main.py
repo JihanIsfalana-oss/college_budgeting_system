@@ -31,6 +31,9 @@ class TargetTabunganCreate(BaseModel):
     tujuan: str
     nominal_target: float
 
+class UpdateTabungan(BaseModel):
+    nominal_tambah: float
+
 models.Base.metadata.create_all(bind=database.engine)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -234,6 +237,22 @@ def riwayat_bulanan(user_email: str, bulan: int = None, tahun: int = None, db: S
         "total_pengeluaran_bulan_ini": total_pengeluaran,
         "data_riwayat": records
     }
+    
+@app.put("/target-tabungan/{target_id}")
+def isi_tabungan(target_id: int, data: UpdateTabungan, db: Session = Depends(get_db)):
+    target = db.query(models.TargetTabungan).filter(models.TargetTabungan.id == target_id).first()
+    if not target:
+        return {"error": "Target tidak ditemukan"}
+    
+    # Tambahin uangnya!
+    target.nominal_terkumpul += data.nominal_tambah
+    
+    # Cek apakah uangnya udah cukup buat penuhin target
+    if target.nominal_terkumpul >= target.nominal_target:
+        target.status = "tercapai"
+        
+    db.commit()
+    return {"status": "success", "message": f"Berhasil menabung Rp {data.nominal_tambah:,.0f}!"}
 
 # ==========================================
 # ENDPOINT LAMA (SEKARANG TERKUNCI PER USER)
